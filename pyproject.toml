@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flashcards-ai"
+version = "1.0.0"
+description = "CLI flashcards with SM-2 spaced repetition and auto-generated cards from your notes — zero dependencies"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "YashwanthNomula" }]
+
+[project.scripts]
+flashcards-ai = "flashcards_ai.cli:main"
+fai = "flashcards_ai.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["flashcards_ai*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
