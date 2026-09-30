@@ -1,0 +1,7 @@
+# Vocabulary deck — TSV format (front<TAB>back). Import with:
+#   flashcards-ai import examples/vocab.tsv --deck vocab
+serendipity	The occurrence of happy discoveries by chance
+ephemeral	Lasting for a very short time
+ubiquitous	Present everywhere at once
+pragmatic	Dealing with problems in a practical way
+laconic	Using very few words
