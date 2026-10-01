@@ -12,7 +12,7 @@ from .importers import auto_import
 from .models import Card, Store
 from .sm2 import due_cards
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 
 def _store() -> Store:
