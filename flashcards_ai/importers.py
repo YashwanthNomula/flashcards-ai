@@ -14,6 +14,14 @@ Supported formats:
 
 3. **Definition lists** — ``term :: definition`` or ``term — definition``
    lines become front/back pairs. Great for vocabulary.
+
+4. **Cloze deletion** — any line containing ``{{...}}`` becomes a
+   fill-in-the-blank card. The front masks the answer as ``[...]`` and
+   the back reveals it::
+
+       The GIL prevents {{true parallel execution}} of Python bytecode.
+
+   Cards get an automatic ``cloze`` tag (deduplicated against user tags).
 """
 
 from __future__ import annotations
@@ -27,6 +35,7 @@ from .models import Card
 _Q_RE = re.compile(r"^\s*(?:Q|Question)\s*[:\-]\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 _A_RE = re.compile(r"^\s*(?:A|Answer)\s*[:\-]\s*(.*)$", re.IGNORECASE | re.MULTILINE)
 _DEF_RE = re.compile(r"^(.+?)\s*(?:::|—|–|-{2,})\s*(.+?)\s*$")
+_CLOZE_RE = re.compile(r"\{\{(.+?)\}\}")
 
 
 def from_qa_notes(text: str, tags: list[str] | None = None) -> list[Card]:
@@ -89,6 +98,27 @@ def from_definitions(text: str, tags: list[str] | None = None) -> list[Card]:
     return cards
 
 
+def from_cloze(text: str, tags: list[str] | None = None) -> list[Card]:
+    """Parse cloze-deletion lines (``{{answer}}``) into fill-in-the-blank cards.
+
+    The front shows the line with each ``{{...}}`` masked as ``[...]``; the
+    back shows the full line with the answers revealed. Lines without any
+    ``{{...}}`` are skipped (they carry no question to answer).
+    """
+    all_tags = list(tags or [])
+    if "cloze" not in all_tags:
+        all_tags.append("cloze")
+    cards: list[Card] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or not _CLOZE_RE.search(line):
+            continue
+        front = _CLOZE_RE.sub("[...]", line)
+        back = _CLOZE_RE.sub(r"\1", line)
+        cards.append(Card(front=front, back=back, tags=list(all_tags)))
+    return cards
+
+
 def auto_import(path: str | Path, tags: list[str] | None = None) -> list[Card]:
     """Guess the format from content/extension and generate cards."""
     p = Path(path)
@@ -97,6 +127,8 @@ def auto_import(path: str | Path, tags: list[str] | None = None) -> list[Card]:
         return from_tsv(text, tags)
     if _Q_RE.search(text):
         return from_qa_notes(text, tags)
+    if _CLOZE_RE.search(text):
+        return from_cloze(text, tags)
     cards = from_definitions(text, tags)
     if cards:
         return cards
