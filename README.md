@@ -67,6 +67,10 @@ $ flashcards-ai stats python
 | `Q:` / `A:` notes (`.md`, `.txt`) | `Q: What is the GIL?` → `A: ...` (multi-line answers OK) | Study notes, lecture dumps |
 | TSV / CSV | `front<TAB>back` (`#` comments ignored) | Spreadsheets, exports |
 | Definition lists | `serendipity :: happy discovery by chance` | Vocabulary |
+| Cloze deletion | `The GIL prevents {{true parallel execution}} of bytecode.` | Fill-in-the-blank recall |
+
+Wrap any answer in `{{...}}` and the importer masks it as `[...]` on the front;
+the back reveals the full line. Cloze cards get a `cloze` tag automatically.
 
 Anything else falls back to blank-line-separated front/back paragraph pairs.
 
@@ -97,7 +101,7 @@ flashcards-ai --help
 ```
 
 Requires Python ≥ 3.9. **Zero runtime dependencies** — the test suite is the only
-dev dependency (`pip install -e . pytest && pytest` → 19 tests).
+dev dependency (`pip install -e . pytest && pytest` → 22 tests).
 
 Set `FLASHCARDS_HOME` to keep decks somewhere other than `~/.flashcards-ai/`.
 
@@ -107,12 +111,12 @@ Set `FLASHCARDS_HOME` to keep decks somewhere other than `~/.flashcards-ai/`.
 flashcards_ai/
   sm2.py        # the SM-2 scheduling algorithm
   models.py     # Card / Deck / JSON store
-  importers.py  # notes → cards (Q/A, TSV/CSV, definitions)
+  importers.py  # notes → cards (Q/A, TSV/CSV, definitions, cloze)
   review.py     # interactive terminal session
   stats.py      # retention + 7-day workload forecast
   cli.py        # argparse entry point (`flashcards-ai`, alias `fai`)
-tests/          # 19 tests: scheduler math, importers, store, CLI, review flow
-examples/       # sample_notes.md, vocab.tsv — import these to try it
+tests/          # 22 tests: scheduler math, importers, store, CLI, review flow
+examples/       # sample_notes.md, vocab.tsv, cloze_notes.md — import these to try it
 ```
 
 ## License
