@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flashcards-ai"
-version = "1.0.0"
+version = "1.1.0"
 description = "CLI flashcards with SM-2 spaced repetition and auto-generated cards from your notes — zero dependencies"
 readme = "README.md"
 requires-python = ">=3.9"
