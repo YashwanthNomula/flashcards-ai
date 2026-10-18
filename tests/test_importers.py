@@ -73,6 +73,51 @@ def test_cloze_multiple_blanks_and_tags():
     assert cards[0].tags == ["python", "cloze"]  # no duplicate 'cloze'
 
 
+def test_numbered_cloze_one_card_per_number():
+    text = "Paris is the capital of {{c1::France}} and they speak {{c2::French}}.\n"
+    cards = from_cloze(text)
+    assert len(cards) == 2
+    assert cards[0].front == "Paris is the capital of [...] and they speak French."
+    assert cards[1].front == "Paris is the capital of France and they speak [...]."
+    assert cards[0].back == cards[1].back == \
+        "Paris is the capital of France and they speak French."
+    assert cards[0].tags == cards[1].tags == ["cloze"]
+
+
+def test_numbered_cloze_order_and_shared_numbers():
+    # cards come out in numeric order; repeated numbers mask together
+    text = "{{c2::b}} then {{c1::a}} then {{c1::c}}.\n"
+    cards = from_cloze(text)
+    assert len(cards) == 2
+    assert cards[0].front == "b then [...] then [...]."
+    assert cards[1].front == "[...] then a then c."
+
+
+def test_numbered_cloze_hint():
+    text = "This is {{c1::cloze deletion::a hint}}.\n"
+    cards = from_cloze(text)
+    assert len(cards) == 1
+    assert cards[0].front == "This is [a hint]."
+    assert cards[0].back == "This is cloze deletion."
+
+
+def test_numbered_cloze_with_plain_mask():
+    # unnumbered masks stay hidden on every numbered card
+    text = "{{c1::a}} and {{hidden}} and {{c2::b}}.\n"
+    cards = from_cloze(text)
+    assert len(cards) == 2
+    assert cards[0].front == "[...] and [...] and b."
+    assert cards[1].front == "a and [...] and [...]."
+    assert cards[0].back == "a and hidden and b."
+
+
+def test_numbered_cloze_skips_comments():
+    text = "# {{c1::not a card}}\n{{c1::real}} card.\n"
+    cards = from_cloze(text)
+    assert len(cards) == 1
+    assert cards[0].front == "[...] card."
+
+
 def test_auto_import_dispatch(tmp_path):
     md = tmp_path / "notes.md"
     md.write_text("Q: 2+2?\nA: 4\n")

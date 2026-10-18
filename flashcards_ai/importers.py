@@ -21,6 +21,15 @@ Supported formats:
 
        The GIL prevents {{true parallel execution}} of Python bytecode.
 
+   **Numbered cloze masks** — ``{{c1::...}}``, ``{{c2::...}}`` generate
+   one card *per number* (like Anki): the front masks only the masks
+   with that number and shows the rest as plain text::
+
+       Paris is the capital of {{c1::France}} and speaks {{c2::French}}.
+
+   An optional hint works too — ``{{c1::answer::hint}}`` shows
+   ``[hint]`` where the blank is on that card's front.
+
    Cards get an automatic ``cloze`` tag (deduplicated against user tags).
 """
 
@@ -36,6 +45,7 @@ _Q_RE = re.compile(r"^\s*(?:Q|Question)\s*[:\-]\s*(.+?)\s*$", re.IGNORECASE | re
 _A_RE = re.compile(r"^\s*(?:A|Answer)\s*[:\-]\s*(.*)$", re.IGNORECASE | re.MULTILINE)
 _DEF_RE = re.compile(r"^(.+?)\s*(?:::|—|–|-{2,})\s*(.+?)\s*$")
 _CLOZE_RE = re.compile(r"\{\{(.+?)\}\}")
+_NUM_CLOZE_RE = re.compile(r"\{\{c(\d+)::(.*?)(?:::([^}]*))?\}\}")
 
 
 def from_qa_notes(text: str, tags: list[str] | None = None) -> list[Card]:
@@ -98,12 +108,60 @@ def from_definitions(text: str, tags: list[str] | None = None) -> list[Card]:
     return cards
 
 
+def _cloze_back(line: str) -> str:
+    """Reveal every mask (numbered or plain) as its plain answer text."""
+    def repl(m: re.Match) -> str:
+        num = _NUM_CLOZE_RE.fullmatch(m.group(0))
+        return num.group(2) if num else m.group(1)
+    return _CLOZE_RE.sub(repl, line)
+
+
+def _numbered_cloze_front(line: str, number: int) -> str:
+    """Front for the card quizzing cloze number ``number``.
+
+    Masks with that number are hidden (``[...]``, or ``[hint]`` when the
+    mask carries a ``{{cN::answer::hint}}`` hint); masks with other
+    numbers are shown as plain text; unnumbered ``{{...}}`` masks are
+    hidden on every numbered card.
+    """
+    def repl(m: re.Match) -> str:
+        num = _NUM_CLOZE_RE.fullmatch(m.group(0))
+        if num is None:
+            return "[...]"
+        if int(num.group(1)) == number:
+            return f"[{num.group(3)}]" if num.group(3) else "[...]"
+        return num.group(2)
+    return _CLOZE_RE.sub(repl, line)
+
+
+def _cloze_answers_for_line(line: str, number: int | None) -> list[str]:
+    """Answers quizzed by the card built from ``line``.
+
+    ``number`` is the numbered-cloze card being built (``None`` for plain
+    ``{{...}}`` cards): the card quizzes plain masks plus the masks carrying
+    its number, in line order. Hints (``{{c1::answer::hint}}``) never leak
+    into the answer — group(2) is the answer, group(3) the hint.
+    """
+    answers = []
+    for m in _CLOZE_RE.finditer(line):
+        num = _NUM_CLOZE_RE.fullmatch(m.group(0))
+        if num is None:
+            answers.append(m.group(1))
+        elif number is not None and int(num.group(1)) == number:
+            answers.append(num.group(2))
+    return answers
+
+
 def from_cloze(text: str, tags: list[str] | None = None) -> list[Card]:
     """Parse cloze-deletion lines (``{{answer}}``) into fill-in-the-blank cards.
 
     The front shows the line with each ``{{...}}`` masked as ``[...]``; the
     back shows the full line with the answers revealed. Lines without any
     ``{{...}}`` are skipped (they carry no question to answer).
+
+    Lines with **numbered** masks (``{{c1::...}}``, ``{{c2::...}}``)
+    produce one card per mask number: that card's front masks only the
+    masks with its number and reveals the others as plain text.
     """
     all_tags = list(tags or [])
     if "cloze" not in all_tags:
@@ -113,9 +171,18 @@ def from_cloze(text: str, tags: list[str] | None = None) -> list[Card]:
         line = line.strip()
         if not line or line.startswith("#") or not _CLOZE_RE.search(line):
             continue
-        front = _CLOZE_RE.sub("[...]", line)
-        back = _CLOZE_RE.sub(r"\1", line)
-        cards.append(Card(front=front, back=back, tags=list(all_tags)))
+        numbers = sorted({int(m.group(1)) for m in _NUM_CLOZE_RE.finditer(line)})
+        if numbers:
+            for n in numbers:
+                cards.append(Card(front=_numbered_cloze_front(line, n),
+                                  back=_cloze_back(line),
+                                  tags=list(all_tags),
+                                  cloze_answers=_cloze_answers_for_line(line, n)))
+        else:
+            front = _CLOZE_RE.sub("[...]", line)
+            back = _cloze_back(line)
+            cards.append(Card(front=front, back=back, tags=list(all_tags),
+                              cloze_answers=_cloze_answers_for_line(line, None)))
     return cards
 
 

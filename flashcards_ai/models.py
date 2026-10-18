@@ -24,6 +24,10 @@ class Card:
     front: str
     back: str
     tags: list[str] = field(default_factory=list)
+    # Answers quizzed by `fai review --type` for cloze cards. Empty for
+    # non-cloze cards and for cards created before typing data was stored
+    # (those fall back to self-grading in typing mode).
+    cloze_answers: list[str] = field(default_factory=list)
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:8])
     created: str = field(default_factory=lambda: date.today().isoformat())
     reviews: int = 0
@@ -49,6 +53,7 @@ class Card:
             front=data["front"],
             back=data["back"],
             tags=data.get("tags", []),
+            cloze_answers=data.get("cloze_answers", []),
             id=data.get("id", uuid.uuid4().hex[:8]),
             created=data.get("created", date.today().isoformat()),
             reviews=data.get("reviews", 0),
@@ -82,7 +87,10 @@ class Store:
         return self.home / f"{safe}.json"
 
     def deck_names(self) -> list[str]:
-        return sorted(p.stem for p in self.home.glob("*.json"))
+        # Underscore-prefixed files are private store data (e.g. the
+        # review-session log `_sessions.json`), never decks.
+        return sorted(p.stem for p in self.home.glob("*.json")
+                      if not p.stem.startswith("_"))
 
     def load(self, name: str) -> Deck:
         path = self._path(name)
