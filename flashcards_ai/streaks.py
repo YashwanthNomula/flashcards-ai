@@ -47,21 +47,32 @@ def read_sessions(store) -> list[dict]:
             "date": item["date"],
             "deck": item.get("deck", "?"),
             "reviewed": int(item.get("reviewed", 0) or 0),
+            "remembered": (int(item["remembered"])
+                           if item.get("remembered") is not None else None),
         })
     return kept
 
 
-def log_session(store, deck: str, reviewed: int, day: date | None = None) -> None:
-    """Append a session record. Sessions with no graded cards log nothing."""
+def log_session(store, deck: str, reviewed: int, day: date | None = None,
+              remembered: int | None = None) -> None:
+    """Append a session record. Sessions with no graded cards log nothing.
+
+    *remembered* is the number of cards graded >= 3 (recalled) this session —
+    it powers retention curves in `fai analytics`. Older records (written
+    before v1.6.0) don't have it and are handled as "no recall data".
+    """
     reviewed = int(reviewed or 0)
     if reviewed <= 0:
         return
     sessions = read_sessions(store)
-    sessions.append({
+    record = {
         "date": (day or date.today()).isoformat(),
         "deck": deck,
         "reviewed": reviewed,
-    })
+    }
+    if remembered is not None:
+        record["remembered"] = max(0, int(remembered))
+    sessions.append(record)
     sessions_path(store).write_text(
         json.dumps(sessions, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",

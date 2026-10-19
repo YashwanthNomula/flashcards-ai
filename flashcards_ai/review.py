@@ -112,6 +112,11 @@ def _is_typeable(card: Card) -> bool:
     return "cloze" in {t.lower() for t in card.tags} and bool(card.cloze_answers)
 
 
+def _remembered_of(stats: dict) -> int:
+    """Cards graded 3+ (recalled) in a session stats dict."""
+    return stats["hard"] + stats["good"] + stats["easy"]
+
+
 def review(deck_name: str, store: Store, limit: int = 0, shuffle: bool = True,
            tags: list[str] | None = None, type_mode: bool = False) -> dict:
     """Run an interactive review session. Returns session stats.
@@ -158,7 +163,8 @@ def review(deck_name: str, store: Store, limit: int = 0, shuffle: bool = True,
         if quality is None:
             print(_c(_DIM, "Session paused — progress saved."))
             store.save(deck)
-            streaks_mod.log_session(store, deck_name, stats["reviewed"])
+            streaks_mod.log_session(store, deck_name, stats["reviewed"],
+                                    remembered=_remembered_of(stats))
             return stats
 
         card.schedule = grade(card.schedule, quality)
@@ -179,5 +185,6 @@ def review(deck_name: str, store: Store, limit: int = 0, shuffle: bool = True,
 
     print(_c(_BOLD, _c(_GREEN, f"✓ Session complete: {stats['reviewed']} reviewed, "
                                f"{stats['again']} to repeat.")))
-    streaks_mod.log_session(store, deck_name, stats["reviewed"])
+    streaks_mod.log_session(store, deck_name, stats["reviewed"],
+                            remembered=_remembered_of(stats))
     return stats

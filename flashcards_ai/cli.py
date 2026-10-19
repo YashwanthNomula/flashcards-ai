@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from . import review as review_mod
+from . import analytics as analytics_mod
 from . import stats as stats_mod
 from . import streaks as streaks_mod
 from . import sync as sync_mod
@@ -15,7 +16,7 @@ from .importers import auto_import
 from .models import Card, Store
 from .sm2 import due_cards
 
-VERSION = "1.5.0"
+VERSION = "1.6.0"
 
 
 def _store() -> Store:
@@ -129,6 +130,12 @@ def cmd_stats(args) -> int:
     return 0
 
 
+def cmd_analytics(args) -> int:
+    analytics_mod.show(_store(), deck=args.deck, days=args.days,
+                       as_json=args.as_json)
+    return 0
+
+
 def cmd_export(args) -> int:
     deck = _store().load(args.deck)
     out = Path(args.output)
@@ -223,6 +230,15 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("deck")
     s.add_argument("--days", type=int, default=7)
     s.set_defaults(func=cmd_stats)
+
+    n = sub.add_parser("analytics",
+                       help="Retention curves and forgetting-curve estimates")
+    n.add_argument("--deck", help="Only include this deck's sessions and cards")
+    n.add_argument("--days", type=int, default=14,
+                   help="Days of session history for the retention curve")
+    n.add_argument("--json", dest="as_json", action="store_true",
+                   help="Machine-readable output")
+    n.set_defaults(func=cmd_analytics)
 
     k = sub.add_parser("streak", help="Review streaks from the session log")
     k.add_argument("--deck", help="Only count sessions for this deck")

@@ -98,7 +98,7 @@ def test_log_session_writes_record(store):
     _log(store, _days_ago(0), "vocab", 7)
     sessions = streaks.read_sessions(store)
     assert sessions == [{"date": date.today().isoformat(),
-                         "deck": "vocab", "reviewed": 7}]
+                         "deck": "vocab", "reviewed": 7, "remembered": None}]
 
 
 def test_log_session_skips_zero_reviews(store):

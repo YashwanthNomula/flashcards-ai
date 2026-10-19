@@ -117,6 +117,7 @@ flashcards-ai streak [--deck <deck>]                 # review streaks + totals
 flashcards-ai remind                                 # one-line daily reminder (cron-safe)
 flashcards-ai list [deck]                           # decks, or cards in a deck
 flashcards-ai stats <deck> [--days N]               # retention + workload forecast
+flashcards-ai analytics [--deck <deck>] [--days N] [--json]  # retention curves + forgetting-curve estimates
 flashcards-ai export <deck> <file.tsv>              # backup / share
 flashcards-ai delete <deck>                         # remove a deck
 flashcards-ai sync export <deck> <file.md>          # shareable Markdown
@@ -197,6 +198,21 @@ $ fai remind
 When you start a review with an active streak at risk, the session opens with
 a `🔥 N-day streak on the line!` nudge. `fai remind` is non-interactive, so it
 works from cron for a morning ping.
+
+## Review analytics
+
+`fai analytics [--deck <deck>] [--days N] [--json]` turns your session log
+into learning analytics:
+
+- **Retention curve** — recall rate per day over the last 14 days (recall =
+  cards graded 3+; logged since v1.6.0, so older days show `n/a` instead of
+  guessed numbers)
+- **Forgetting curve** — measured recall vs SM-2's expected retention
+  (`0.9^(t/interval)`), bucketed by days since last review and shown per deck
+- **Basics** — session/review totals, current streak, per-deck retention
+
+Sessions log `recalled` counts from v1.6.0 on — the curve fills in as you
+review.
 
 Grades follow SM-2: 5 perfect → interval × easiness, 3 = hard but recalled,
 <3 = wrong → the card restarts and returns tomorrow. Easiness never drops below 1.3.
