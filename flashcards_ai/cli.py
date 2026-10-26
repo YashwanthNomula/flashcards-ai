@@ -8,6 +8,7 @@ from pathlib import Path
 
 from . import review as review_mod
 from . import analytics as analytics_mod
+from . import due as due_mod
 from . import stats as stats_mod
 from . import streaks as streaks_mod
 from . import sync as sync_mod
@@ -125,6 +126,15 @@ def cmd_list(args) -> int:
     return 0
 
 
+def cmd_due(args) -> int:
+    try:
+        due_mod.show(_store(), deck=args.deck, as_json=args.as_json)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def cmd_stats(args) -> int:
     stats_mod.show(_store().load(args.deck), days=args.days)
     return 0
@@ -225,6 +235,12 @@ def build_parser() -> argparse.ArgumentParser:
     l = sub.add_parser("list", help="List decks, or cards in a deck")
     l.add_argument("deck", nargs="?")
     l.set_defaults(func=cmd_list)
+
+    du = sub.add_parser("due", help="List cards due for review today")
+    du.add_argument("--deck", help="Only list due cards from this deck")
+    du.add_argument("--json", dest="as_json", action="store_true",
+                    help="Machine-readable output")
+    du.set_defaults(func=cmd_due)
 
     s = sub.add_parser("stats", help="Retention stats and workload forecast")
     s.add_argument("deck")
