@@ -118,6 +118,7 @@ flashcards-ai remind                                 # one-line daily reminder (
 flashcards-ai list [deck]                           # decks, or cards in a deck
 flashcards-ai stats <deck> [--days N]               # retention + workload forecast
 flashcards-ai analytics [--deck <deck>] [--days N] [--json]  # retention curves + forgetting-curve estimates
+flashcards-ai leeches [--deck <deck>] [--threshold N] [--json]  # cards you keep forgetting
 flashcards-ai export <deck> <file.tsv>              # backup / share
 flashcards-ai delete <deck>                         # remove a deck
 flashcards-ai sync export <deck> <file.md>          # shareable Markdown
@@ -214,6 +215,16 @@ into learning analytics:
 Sessions log `recalled` counts from v1.6.0 on — the curve fills in as you
 review.
 
+## Leech cards
+
+`fai leeches [--deck <deck>] [--threshold N] [--json]` lists the cards
+you keep failing — every grade below 3 counts as a lapse, and a card
+with at least 3 lapses (the default threshold) is a leech, listed worst
+first (most lapses, then lowest easiness). A leech usually means the
+card itself needs rewriting — split it, ask one thing per front, or add
+a cue — rather than more reviews of the same wording. Read-only: it
+never edits a deck.
+
 Grades follow SM-2: 5 perfect → interval × easiness, 3 = hard but recalled,
 <3 = wrong → the card restarts and returns tomorrow. Easiness never drops below 1.3.
 
@@ -249,6 +260,7 @@ flashcards_ai/
   importers.py  # notes → cards (Q/A, TSV/CSV, definitions, cloze)
   review.py     # interactive terminal session
   stats.py      # retention + 7-day workload forecast
+  leeches.py    # cards lapsed ≥ threshold, worst first (read-only report)
   streaks.py    # session log, streak math, streak/remind reports
   cli.py        # argparse entry point (`flashcards-ai`, alias `fai`)
 tests/          # 95 tests: scheduler math, importers, store, CLI, review flow, sync, streaks, cloze typing

@@ -9,6 +9,7 @@ from pathlib import Path
 from . import review as review_mod
 from . import analytics as analytics_mod
 from . import due as due_mod
+from . import leeches as leeches_mod
 from . import stats as stats_mod
 from . import streaks as streaks_mod
 from . import sync as sync_mod
@@ -135,6 +136,16 @@ def cmd_due(args) -> int:
     return 0
 
 
+def cmd_leeches(args) -> int:
+    try:
+        leeches_mod.show(_store(), deck=args.deck, threshold=args.threshold,
+                         as_json=args.as_json)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def cmd_stats(args) -> int:
     stats_mod.show(_store().load(args.deck), days=args.days)
     return 0
@@ -241,6 +252,14 @@ def build_parser() -> argparse.ArgumentParser:
     du.add_argument("--json", dest="as_json", action="store_true",
                     help="Machine-readable output")
     du.set_defaults(func=cmd_due)
+
+    le = sub.add_parser("leeches", help="Cards you keep forgetting (lapse count)")
+    le.add_argument("--deck", help="Only list leeches from this deck")
+    le.add_argument("--threshold", type=int, default=leeches_mod.DEFAULT_THRESHOLD,
+                    help="Minimum lapses to count as a leech (default 3)")
+    le.add_argument("--json", dest="as_json", action="store_true",
+                    help="Machine-readable output")
+    le.set_defaults(func=cmd_leeches)
 
     s = sub.add_parser("stats", help="Retention stats and workload forecast")
     s.add_argument("deck")
